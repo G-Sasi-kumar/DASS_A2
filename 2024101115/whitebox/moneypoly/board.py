@@ -1,0 +1,118 @@
+"""Board layout and tile resolution for MoneyPoly."""
+
+from moneypoly.property import Property, PropertyGroup
+from moneypoly.config import (
+    JAIL_POSITION,
+    GO_TO_JAIL_POSITION,
+    FREE_PARKING_POSITION,
+    INCOME_TAX_POSITION,
+    LUXURY_TAX_POSITION,
+)
+
+SPECIAL_TILES = {
+    0: "go",
+    JAIL_POSITION: "jail",
+    GO_TO_JAIL_POSITION: "go_to_jail",
+    FREE_PARKING_POSITION: "free_parking",
+    INCOME_TAX_POSITION: "income_tax",
+    LUXURY_TAX_POSITION: "luxury_tax",
+    2: "community_chest",
+    17: "community_chest",
+    33: "community_chest",
+    7: "chance",
+    22: "chance",
+    36: "chance",
+    5: "railroad",
+    15: "railroad",
+    25: "railroad",
+    35: "railroad",
+}
+
+
+class Board:
+    """Represents the MoneyPoly game board and all its tiles."""
+
+    def __init__(self):
+        self.groups = self._create_groups()
+        self.properties = self._create_properties()
+
+    def _create_groups(self):
+        """Create and return the eight colour groups."""
+        return {
+            "brown": PropertyGroup("brown", "brown"),
+            "light_blue": PropertyGroup("light_blue", "light_blue"),
+            "pink": PropertyGroup("pink", "pink"),
+            "orange": PropertyGroup("orange", "orange"),
+            "red": PropertyGroup("red", "red"),
+            "yellow": PropertyGroup("yellow", "yellow"),
+            "green": PropertyGroup("green", "green"),
+            "dark_blue": PropertyGroup("dark_blue", "dark_blue"),
+        }
+
+    def _create_properties(self):
+        """Instantiate every purchasable property and return as a list."""
+        groups = self.groups
+        return [
+            Property("Mediterranean Avenue", 1, 60, 2, groups["brown"]),
+            Property("Baltic Avenue", 3, 60, 4, groups["brown"]),
+            Property("Oriental Avenue", 6, 100, 6, groups["light_blue"]),
+            Property("Vermont Avenue", 8, 100, 6, groups["light_blue"]),
+            Property("Connecticut Avenue", 9, 120, 8, groups["light_blue"]),
+            Property("St. Charles Place", 11, 140, 10, groups["pink"]),
+            Property("States Avenue", 13, 140, 10, groups["pink"]),
+            Property("Virginia Avenue", 14, 160, 12, groups["pink"]),
+            Property("St. James Place", 16, 180, 14, groups["orange"]),
+            Property("Tennessee Avenue", 18, 180, 14, groups["orange"]),
+            Property("New York Avenue", 19, 200, 16, groups["orange"]),
+            Property("Kentucky Avenue", 21, 220, 18, groups["red"]),
+            Property("Indiana Avenue", 23, 220, 18, groups["red"]),
+            Property("Illinois Avenue", 24, 240, 20, groups["red"]),
+            Property("Atlantic Avenue", 26, 260, 22, groups["yellow"]),
+            Property("Ventnor Avenue", 27, 260, 22, groups["yellow"]),
+            Property("Marvin Gardens", 29, 280, 24, groups["yellow"]),
+            Property("Pacific Avenue", 31, 300, 26, groups["green"]),
+            Property("North Carolina Avenue", 32, 300, 26, groups["green"]),
+            Property("Pennsylvania Avenue", 34, 320, 28, groups["green"]),
+            Property("Park Place", 37, 350, 35, groups["dark_blue"]),
+            Property("Boardwalk", 39, 400, 50, groups["dark_blue"]),
+        ]
+
+    def get_property_at(self, position):
+        """Return the Property at `position`, or None if there is none."""
+        for prop in self.properties:
+            if prop.position == position:
+                return prop
+        return None
+
+    def get_tile_type(self, position):
+        """Return a string describing the tile at `position`."""
+        if position in SPECIAL_TILES:
+            return SPECIAL_TILES[position]
+        if self.get_property_at(position) is not None:
+            return "property"
+        return "blank"
+
+    def is_purchasable(self, position):
+        """Return True if the tile at `position` is a purchasable property."""
+        prop = self.get_property_at(position)
+        if prop is None:
+            return False
+        if prop.is_mortgaged:
+            return False
+        return prop.owner is None
+
+    def is_special_tile(self, position):
+        """Return True if `position` holds a non-property special tile."""
+        return position in SPECIAL_TILES
+
+    def properties_owned_by(self, player):
+        """Return all properties currently owned by `player`."""
+        return [prop for prop in self.properties if prop.owner == player]
+
+    def unowned_properties(self):
+        """Return all properties that have not yet been purchased."""
+        return [prop for prop in self.properties if prop.owner is None]
+
+    def __repr__(self):
+        owned = sum(1 for prop in self.properties if prop.owner is not None)
+        return f"Board({len(self.properties)} properties, {owned} owned)"
